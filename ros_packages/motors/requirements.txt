@@ -65,3 +65,4 @@ tinkerforge==2.1.31
 toml==0.10.2
 urllib3==2.2.1
 zipp==1.0.0
+serial

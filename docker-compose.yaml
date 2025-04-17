@@ -120,6 +120,8 @@ services:
       - rosbridge-ws
       - tinkerforge-brickd
       - flask-app
+    devices:
+      - "/dev/ttyACM0:/dev/ttyACM0"
 
   ros-voice-assistant:
     image: ros_voice_assistant

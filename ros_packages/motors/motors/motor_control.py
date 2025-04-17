@@ -1,3 +1,12 @@
+#ST 
+import os
+import sys
+import serial
+#script_dir = os.path.dirname(os.path.abspath(__file__))
+#sys.path.insert(0, script_dir)
+from motors.STservo_sdk import *
+
+
 from typing import Iterable, Tuple
 
 import rclpy
@@ -10,6 +19,49 @@ from pib_motors.update_bricklet_uids import *
 from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
+#const values for STS
+BAUDRATE                    = 1000000           # STServo default baudrate : 1000000
+DEVICENAME                  = '/dev/ttyACM0'    # Check which port is being used on your controller
+STS_MINIMUM_POSITION_VALUE  = 0           # STServo will rotate between this value
+STS_MAXIMUM_POSITION_VALUE  = 4095
+STS_MOVING_SPEED            = 2400        # STServo moving speed
+STS_MOVING_ACC              = 50 
+
+motor_map = {
+            "thumb_right_opposition": 1,
+            "thumb_right_stretch": 1,
+            "index_right_stretch": 12,
+            "middle_right_stretch": 13,
+            "ring_right_stretch": 14,
+            "pinky_right_stretch": 15,
+            "wrist_right": 16,
+            "lower_arm_right_rotation": 17,
+            "elbow_right": 18,
+            "upper_arm_right_rotation": 19,
+            "shoulder_horizontal_right": 20,
+            "shoulder_vertical_right": 21,
+            # IDs 22, 23 missing?
+            "turn_head_motor": 24,
+            "tilt_forward_motor": 25,
+            # IDs 26, 27 missing?
+            "shoulder_horizontal_left": 28,
+            "shoulder_vertical_left": 29,
+            "thumb_left_opposition": 30,
+            "thumb_left_stretch": 31,
+            "index_left_stretch": 32,
+            "middle_left_stretch": 33,
+            "ring_left_stretch": 34,
+            "pinky_left_stretch": 35,
+            "wrist_left": 36,
+            "lower_arm_left_rotation": 37,
+            "elbow_left": 38,
+            "upper_arm_left_rotation": 39,
+        }
+
+portHandler = port_handler.PortHandler(DEVICENAME)
+packetHandler = sts(portHandler)
+portHandler.openPort()
+portHandler.setBaudRate(BAUDRATE)
 
 def motor_settings_ros_to_dto(ms: MotorSettings):
     return {
@@ -136,11 +188,15 @@ class MotorControl(Node):
                     self.get_logger().info(
                         f"setting position of {motor.name} to {position}"
                     )
-                    successful = motor.set_position(position)
-                    self.get_logger().info(
-                        f"setting position {'succeeded' if successful else 'failed'}."
-                    )
-                    response.successful &= successful
+                    
+                    #successful = motor.set_position(position)
+                    sts_goal_position =((position+9000)*0.23)
+                    STS_ID=motor_map.get(motor.name)
+                    packetHandler.WritePosEx(STS_ID, int(sts_goal_position), STS_MOVING_SPEED, STS_MOVING_ACC)
+                    #self.get_logger().info(
+                    #    f"setting position {'succeeded' if successful else 'failed'}."
+                    #)
+                    #response.successful &= successful
                     self.joint_trajectory_publisher.publish(
                         as_joint_trajectory(motor.name, position)
                     )
